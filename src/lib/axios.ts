@@ -1,18 +1,26 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { store } from '@/store';
 import { setCredentials, logOut } from '@/store/authSlice';
 
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api/v1';
+
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api/v1',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
-// Request Interceptor: Attach Access Token
+const AUTH_SKIP_REFRESH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
+
+const shouldSkipRefresh = (url?: string): boolean => {
+  if (!url) return false;
+  return AUTH_SKIP_REFRESH_PATHS.some((path) => url.includes(path));
+};
+
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Only attempt to read Redux store on client-side browser execution
     if (typeof window !== 'undefined') {
       const token = store.getState().auth.token;
       if (token) {
@@ -21,56 +29,42 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Manage 401 Token Refresh Flow
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Check if response is 401 and request has not been retried yet
     if (
       error.response?.status === 401 &&
+      originalRequest &&
       !originalRequest._retry &&
-      typeof window !== 'undefined'
+      typeof window !== 'undefined' &&
+      !shouldSkipRefresh(originalRequest.url)
     ) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = store.getState().auth.refreshToken;
-        if (!refreshToken) {
-          throw new Error('Refresh token not found');
-        }
+        const refreshResponse = await axiosInstance.post('/auth/refresh');
+        const { accessToken } = refreshResponse.data.data;
 
-        // Call the refresh API route
-        const refreshResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api/v1'}/auth/refresh-token`,
-          { refreshToken }
-        );
-
-        // Standard dynamic data extraction
-        const { accessToken, newRefreshToken } = refreshResponse.data.data;
-
-        // Dispatch updated credentials to synchronize memory store
         store.dispatch(
           setCredentials({
             token: accessToken,
-            refreshToken: newRefreshToken || refreshToken,
             user: store.getState().auth.user,
           })
         );
 
-        // Overwrite the header and retry the request
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // Reset auth slice on failed refresh attempt
+      } catch {
         store.dispatch(logOut());
-        return Promise.reject(refreshError);
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
       }
     }
 

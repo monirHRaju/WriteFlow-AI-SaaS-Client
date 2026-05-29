@@ -7,12 +7,14 @@ export interface User {
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
   plan: 'FREE' | 'PRO' | 'TEAM';
   avatar?: string | null;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
 }
 
@@ -20,11 +22,9 @@ const getInitialState = (): AuthState => {
   const defaultState: AuthState = {
     user: null,
     token: null,
-    refreshToken: null,
     isAuthenticated: false,
   };
 
-  // Prevent SSR crashes by checking execution environment
   if (typeof window === 'undefined') {
     return defaultState;
   }
@@ -36,7 +36,6 @@ const getInitialState = (): AuthState => {
       return {
         user: parsed.user || null,
         token: parsed.token || null,
-        refreshToken: parsed.refreshToken || null,
         isAuthenticated: !!parsed.token,
       };
     }
@@ -53,25 +52,20 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ user: User | null; token: string | null; refreshToken: string | null }>
+      action: PayloadAction<{ user: User | null; token: string | null }>
     ) => {
-      const { user, token, refreshToken } = action.payload;
+      const { user, token } = action.payload;
       state.user = user;
       state.token = token;
-      state.refreshToken = refreshToken;
       state.isAuthenticated = !!token;
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem(
-          'writeflow_auth',
-          JSON.stringify({ user, token, refreshToken })
-        );
+        localStorage.setItem('writeflow_auth', JSON.stringify({ user, token }));
       }
     },
     logOut: (state) => {
       state.user = null;
       state.token = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
 
       if (typeof window !== 'undefined') {

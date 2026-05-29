@@ -1,5 +1,7 @@
 import React from 'react';
-import { Sparkles, Bot, ArrowRight, Zap, FileText } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, Bot, Zap, FileText } from 'lucide-react';
+import { LandingCta } from '@/components/shared/LandingCta';
 
 export default function HomePage() {
   return (
@@ -28,13 +30,13 @@ export default function HomePage() {
 
       {/* 5. Dynamic Interactive Call to Actions */}
       <div className="flex flex-col sm:flex-row gap-4 mb-20 z-10">
-        <button className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-lg shadow-foreground/5">
-          <span>Enter Workspace</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <button className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl border border-border bg-accent/10 font-semibold hover:bg-accent/25 active:scale-[0.98] transition-all duration-200 cursor-pointer backdrop-blur-sm">
-          <span>Explore Agent Templates</span>
-        </button>
+        <LandingCta />
+        <Link
+          href="/register"
+          className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl border border-border bg-accent/10 font-semibold hover:bg-accent/25 active:scale-[0.98] transition-all duration-200 backdrop-blur-sm"
+        >
+          <span>Create Account</span>
+        </Link>
       </div>
 
       {/* 6. Feature Grid Showcase */}
