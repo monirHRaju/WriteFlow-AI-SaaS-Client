@@ -2,7 +2,6 @@
 
 import React, { Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { useTemplates } from '@/features/templates/hooks/useTemplates';
 import { TemplateFilters } from '@/features/templates/components/TemplateFilters';
 import { TemplatesGrid } from '@/features/templates/components/TemplatesGrid';
@@ -147,18 +146,14 @@ function ExploreContent() {
 
 export default function ExplorePage() {
   return (
-    <ProtectedRoute>
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-            <p className="text-sm text-muted-foreground animate-pulse">
-              Loading explore space...
-            </p>
-          </div>
-        }
-      >
-        <ExploreContent />
-      </Suspense>
-    </ProtectedRoute>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <p className="text-sm text-muted-foreground animate-pulse">Loading explore space...</p>
+        </div>
+      }
+    >
+      <ExploreContent />
+    </Suspense>
   );
 }
