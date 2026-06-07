@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import 'tippy.js/dist/tippy.css';
+
 @layer base {
   :root {
     /* Sleek Dark Mode (harmonized blue-grey-slate theme) */
